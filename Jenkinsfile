@@ -3,9 +3,9 @@ pipeline {
 
     environment {
         // Define the Docker Hub credentials and repository details
-        DOCKER_HUB_CREDENTIALS = 'docker-hub-credentials-id' // Jenkins credentials ID for Docker Hub
-        DOCKER_HUB_REPO = 'yourusername/my-node-app' // Replace with your Docker Hub repository name
-        GIT_REPO = 'https://github.com/yourusername/my-node-app.git' // Replace with your GitHub repository URL
+        DOCKER_HUB_CREDENTIALS = 'Raju@2001' // Jenkins credentials ID for Docker Hub
+        DOCKER_HUB_REPO = 'raju8/my-node-app' // Replace with your Docker Hub repository name
+        GIT_REPO = 'https://github.com/SivaraJu08/my-node-app.git' // Replace with your GitHub repository URL
     }
 
     stages {
