@@ -2,21 +2,22 @@ pipeline {
     agent any
 
     environment {
-        // Define the Docker Hub credentials and repository details
-        DOCKER_HUB_CREDENTIALS = 'Raju@2001' // Jenkins credentials ID for Docker Hub
-        DOCKER_HUB_REPO = 'raju8/my-node-app' // Replace with your Docker Hub repository name
         GIT_REPO = 'https://github.com/SivaraJu08/my-node-app.git' // Replace with your GitHub repository URL
+        CREDENTIALS_ID = 'git-credentials' // Replace with your Jenkins credentials ID for GitHub
+        DOCKER_HUB_REPO = 'raju8/my-node-app' // Replace with your Docker Hub repository name
+        DOCKER_HUB_CREDENTIALS = 'docker-hub-credentials' // Jenkins credentials ID for Docker Hub
     }
 
     stages {
         stage('Checkout Code') {
             steps {
                 script {
-                    // Clone the repository from GitHub
-                    bat """
-                    echo Checking out code...
-                    git clone -b main ${GIT_REPO} .
-                    """
+                    // Checkout the code from GitHub using the credentials
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: "${GIT_REPO}", credentialsId: "${CREDENTIALS_ID}"]]
+                    ])
                 }
             }
         }
@@ -24,16 +25,13 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Get the current commit hash and branch name
+                    // Get commit hash and branch name
                     def commitHash = bat(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     def branchName = bat(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
 
-                    // Build Docker image and tag it with commit hash and branch name
+                    // Build the Docker image
                     def imageTag = "${branchName}-${commitHash}"
-                    bat """
-                    echo Building Docker image...
-                    docker build -t ${DOCKER_HUB_REPO}:${imageTag} .
-                    """
+                    bat "docker build -t ${DOCKER_HUB_REPO}:${imageTag} ."
                 }
             }
         }
@@ -41,17 +39,13 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    // Login to Docker Hub using Jenkins credentials
+                    // Login to Docker Hub and push the image
                     withDockerRegistry([credentialsId: "${DOCKER_HUB_CREDENTIALS}", url: "https://index.docker.io/v1/"]) {
-                        // Push the image to Docker Hub
                         def commitHash = bat(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                         def branchName = bat(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
                         def imageTag = "${branchName}-${commitHash}"
 
-                        bat """
-                        echo Pushing Docker image to Docker Hub...
-                        docker push ${DOCKER_HUB_REPO}:${imageTag}
-                        """
+                        bat "docker push ${DOCKER_HUB_REPO}:${imageTag}"
                     }
                 }
             }
@@ -61,11 +55,8 @@ pipeline {
     post {
         always {
             script {
-                // Clean up Docker resources after the job finishes
-                bat """
-                echo Cleaning up Docker system...
-                docker system prune -f
-                """
+                // Cleanup Docker system
+                bat "docker system prune -f"
             }
         }
     }
